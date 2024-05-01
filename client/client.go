@@ -31,22 +31,24 @@ func sendRequest(params []int, service string) {
 	var ret Return
 	loadBalancerAddress := os.Getenv("LOAD_BALANCER")
 	loadBalancer, err := rpc.Dial("tcp", loadBalancerAddress)
-	for _, param := range params {
-		args.Service = service
-		args.Input = param
-		if err != nil {
-			fmt.Printf("An error occured : %s \n", err)
-		}
-		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
-		done = <-done.Done
-		if done.Error != nil {
-			fmt.Printf("An error occured : %s \n", done.Error)
-		}
-		fmt.Printf("The result of %s(%d) is %d\n", args.Service, args.Input, ret)
-	}
 	defer func(loadBalancer *rpc.Client) {
 		_ = loadBalancer.Close()
 	}(loadBalancer)
+	for i := 0; i < 10000; i++ {
+		for _, param := range params {
+			args.Service = service
+			args.Input = param
+			if err != nil {
+				fmt.Printf("An error occured : %s \n", err)
+			}
+			done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
+			done = <-done.Done
+			if done.Error != nil {
+				fmt.Printf("An error occured : %s \n", done.Error)
+			}
+			fmt.Printf("The result of %s(%d) is %d\n", args.Service, args.Input, ret)
+		}
+	}
 }
 
 func getParams() ([]int, []int) {
