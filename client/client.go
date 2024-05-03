@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Args struct {
@@ -38,17 +39,20 @@ func sendRequest(params []int, service string) {
 			fmt.Printf("An error occured : %s \n", err)
 		}
 		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
-		go waitResult(done, args, &ret)
+		go waitResult(done, args, &ret, &sync.Mutex{})
 	}
 }
 
-func waitResult(done *rpc.Call, args Args, p *Return) {
+func waitResult(done *rpc.Call, args Args, p *Return, mutex *sync.Mutex) {
+	mutex.Lock()
 	done = <-done.Done
 	if done.Error != nil {
 		fmt.Printf("An error occured %s \n", done.Error)
+		mutex.Unlock()
 		os.Exit(1)
 	} else {
 		fmt.Printf("The result of %s(%d) is %d\n", args.Service, args.Input, *p)
+		mutex.Lock()
 	}
 }
 
