@@ -24,18 +24,20 @@ func main() {
 		fmt.Printf("No args passed in\n")
 		os.Exit(1)
 	}
+	mutex := sync.Mutex{}
 	fibParams, powParams := getParams()
-	go sendRequest(fibParams, "Fibonacci")
-	go sendRequest(powParams, "Pow")
+	go sendRequest(fibParams, "Fibonacci", &mutex)
+	go sendRequest(powParams, "Pow", &mutex)
 	select {}
 }
 
-func sendRequest(params []int, service string) {
-	args := Args{}
-	var ret Return
+func sendRequest(params []int, service string, mutex *sync.Mutex) {
 	loadBalancerAddress := os.Getenv("LOAD_BALANCER")
 	loadBalancer, err := rpc.Dial("tcp", loadBalancerAddress)
 	for _, param := range params {
+		mutex.Lock()
+		args := Args{}
+		var ret Return
 		args.Service = service
 		args.Input = param
 		if err != nil {
@@ -43,7 +45,8 @@ func sendRequest(params []int, service string) {
 		}
 		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
 		start := time.Now()
-		go waitResult(done, args, &ret, &sync.Mutex{}, start)
+		go waitResult(done, args, &ret, mutex, start)
+		mutex.Unlock()
 	}
 }
 
