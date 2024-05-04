@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Args struct {
@@ -15,6 +16,8 @@ type Args struct {
 }
 
 type Return int
+
+var totalResponseTime time.Duration
 
 func main() {
 	if len(os.Args) < 3 {
@@ -39,20 +42,23 @@ func sendRequest(params []int, service string) {
 			fmt.Printf("An error occured : %s \n", err)
 		}
 		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
-		go waitResult(done, args, &ret, &sync.Mutex{})
+		start := time.Now()
+		go waitResult(done, args, &ret, &sync.Mutex{}, start)
 	}
 }
 
-func waitResult(done *rpc.Call, args Args, p *Return, mutex *sync.Mutex) {
+func waitResult(done *rpc.Call, args Args, p *Return, mutex *sync.Mutex, start time.Time) {
 	mutex.Lock()
 	done = <-done.Done
+	end := time.Now()
+	totalResponseTime = end.Sub(start)
 	if done.Error != nil {
 		fmt.Printf("An error occured %s \n", done.Error)
 		mutex.Unlock()
 		os.Exit(1)
 	} else {
-		fmt.Printf("The result of %s(%d) is %d\n", args.Service, args.Input, *p)
-		mutex.Lock()
+		fmt.Printf("The result of %s(%d) is %d. The actual response time is %v\n", args.Service, args.Input, *p, totalResponseTime/10)
+		mutex.Unlock()
 	}
 }
 
