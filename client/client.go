@@ -47,8 +47,8 @@ func sendRequest(params []int, service string, mutex *sync.Mutex) {
 		if err != nil {
 			fmt.Printf("An error occured : %s \n", err)
 		}
-		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
 		start := time.Now()
+		done := loadBalancer.Go("LoadBalancer.ServeRequest", args, &ret, nil)
 		go waitResult(done, args, &ret, mutex, start)
 		mutex.Unlock()
 	}
