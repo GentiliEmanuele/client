@@ -55,8 +55,8 @@ func sendRequest(params []int, service string, mutex *sync.Mutex) {
 }
 
 func waitResult(done *rpc.Call, args Args, p *Return, mutex *sync.Mutex, start time.Time) {
-	mutex.Lock()
 	done = <-done.Done
+	mutex.Lock()
 	end := time.Now()
 	totalResponseTime = end.Sub(start)
 	if done.Error != nil {
