@@ -18,6 +18,7 @@ type Args struct {
 type Return int
 
 var totalResponseTime time.Duration
+var nReq int
 
 func main() {
 	if len(os.Args) < 3 {
@@ -26,6 +27,9 @@ func main() {
 	}
 	mutex := sync.Mutex{}
 	fibParams, powParams := getParams()
+	nReq = len(fibParams) + len(powParams)
+	params := make([]int, 10)
+	nReq = len(params)
 	go sendRequest(fibParams, "Fibonacci", &mutex)
 	go sendRequest(powParams, "Pow", &mutex)
 	select {}
@@ -60,7 +64,12 @@ func waitResult(done *rpc.Call, args Args, p *Return, mutex *sync.Mutex, start t
 		mutex.Unlock()
 		os.Exit(1)
 	} else {
-		fmt.Printf("The result of %s(%d) is %d. The actual response time is %v\n", args.Service, args.Input, *p, totalResponseTime/10)
+		fmt.Printf("The result of %s(%d) is %d \n", args.Service, args.Input, *p)
+		nReq--
+		if nReq == 0 {
+			fmt.Printf("The total response time is %v \n", totalResponseTime)
+		}
+		totalResponseTime = time.Duration(0)
 		mutex.Unlock()
 	}
 }
