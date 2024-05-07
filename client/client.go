@@ -28,8 +28,6 @@ func main() {
 	mutex := sync.Mutex{}
 	fibParams, powParams := getParams()
 	nReq = len(fibParams) + len(powParams)
-	params := make([]int, 10)
-	nReq = len(params)
 	go sendRequest(fibParams, "Fibonacci", &mutex)
 	go sendRequest(powParams, "Pow", &mutex)
 	select {}
